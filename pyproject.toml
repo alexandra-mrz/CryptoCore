@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cryptocore"
 version = "0.1.0"
-description = "Учебный инструмент для шифрования файлов AES-128 в режиме ECB"
+description = "Учебный инструмент для шифрования файлов AES-128 в режимах ECB, CBC, CFB-128, OFB и CTR"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

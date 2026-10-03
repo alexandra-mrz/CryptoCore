@@ -74,7 +74,7 @@ class TestCLI(unittest.TestCase):
     def test_unsupported_algorithm_and_mode(self):
         for option, value in [
             ("--algorithm", "des"),
-            ("--mode", "cbc"),
+            ("--mode", "unknown"),
         ]:
             with self.subTest(option=option):
                 arguments = self.arguments.copy()
