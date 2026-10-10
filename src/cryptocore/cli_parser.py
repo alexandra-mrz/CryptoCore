@@ -1,5 +1,4 @@
 import argparse
-import os
 import sys
 
 from cryptocore.file_io import read_binary, write_binary
@@ -8,6 +7,7 @@ from cryptocore.modes.cbc import cbc_encrypt, cbc_decrypt
 from cryptocore.modes.cfb import cfb_encrypt, cfb_decrypt
 from cryptocore.modes.ofb import ofb_encrypt, ofb_decrypt
 from cryptocore.modes.ctr import ctr_encrypt, ctr_decrypt
+from cryptocore.csprng import generate_random_bytes
 
 
 def build_parser():
@@ -45,8 +45,7 @@ def build_parser():
 
     parser.add_argument(
         "--key",
-        required=True,
-        help="ключ AES-128: 32 шестнадцатеричных символа",
+        help="ключ AES-128: 32 HEX-символа; при шифровании без ключа он генерируется автоматически",
     )
 
     parser.add_argument(
@@ -102,7 +101,10 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     try:
-        key = parse_key(args.key)
+        if args.key is None and args.decrypt:
+            raise ValueError("--key обязателен при расшифровании.")
+
+        key = parse_key(args.key) if args.key is not None else None
 
         if args.iv is not None and args.encrypt:
             raise ValueError("--iv нельзя указывать при шифровании.")
@@ -114,6 +116,20 @@ def main(argv=None):
     except ValueError as error:
         print(f"Ошибка: {error}", file=sys.stderr)
         return 2
+
+    if key is not None:
+        repeated_bytes = len(set(key)) == 1
+        sequential_bytes = all(
+            key[i] == (key[0] + i) % 256
+            for i in range(len(key))
+        )
+
+        if repeated_bytes or sequential_bytes:
+            print(
+                "Предупреждение: ключ содержит повторяющиеся "
+                "или последовательные байты и выглядит слабым.",
+                file=sys.stderr,
+            )
 
     encrypt_functions = {
         "cbc": cbc_encrypt,
@@ -132,6 +148,10 @@ def main(argv=None):
     try:
         data = read_binary(args.input_file)
 
+        if key is None:
+            key = generate_random_bytes(16)
+            print(f"[INFO] Generated random key: {key.hex()}", flush=True)
+
         if args.mode == "ecb":
             if args.encrypt:
                 result = ecb_encrypt(data, key)
@@ -139,7 +159,7 @@ def main(argv=None):
                 result = ecb_decrypt(data, key)
 
         elif args.encrypt:
-            iv = os.urandom(16)
+            iv = generate_random_bytes(16)
             encrypted = encrypt_functions[args.mode](data, key, iv)
             result = iv + encrypted
 

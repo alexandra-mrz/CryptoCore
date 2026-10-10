@@ -9,3 +9,5 @@ dist/
 /plaintext.txt
 /ciphertext.bin
 /decrypted.txt
+/nist_test_data.bin
+/nist_test_data_40mb.bin
